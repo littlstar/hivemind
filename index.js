@@ -17,6 +17,7 @@ module.exports = class Hivemind extends EventEmitter {
     // Chunk the data into individual arrays for processing
     this.chunks = []
     params.data.forEach((item, index) => {
+      // If chunk doesn't exist yet, create it.
       if (!this.chunks[index % params.chunkSize]) {
         this.chunks[index % params.chunkSize] = []
       }
@@ -42,7 +43,7 @@ module.exports = class Hivemind extends EventEmitter {
   }
 
   /**
-   * Launches functions
+   * Launches functions and passes chunked data that was passed into the construtor
    */
 
   run() {

@@ -45,3 +45,5 @@ hivemind.on('error', (err) => {
   console.log("Aww, man!")
 })
 ```
+
+Full example can be found under test/
