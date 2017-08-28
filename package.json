@@ -1,0 +1,33 @@
+{
+  "name": "lambda-hivemind",
+  "version": "0.0.1",
+  "description": "Launch AWS Lambda functions for distributed computing",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/littlstar/unity-hive.git"
+  },
+  "keywords": [
+    "distributed",
+    "computing",
+    "lambda",
+    "aws",
+    "aws",
+    "lambda"
+  ],
+  "author": "Madeline Cameron",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/littlstar/unity-hive/issues"
+  },
+  "homepage": "https://github.com/littlstar/unity-hive#readme",
+  "dependencies": {
+    "aws-sdk": "^2.104.0"
+  },
+  "devDependencies": {
+    "ava": "^0.22.0"
+  }
+}
