@@ -25,15 +25,16 @@ module.exports = class Hivemind extends EventEmitter {
     })
 
     // Chunk the data into individual arrays for processing
-    this.chunks = []
+    this.chunks = [[]]
+    let currentChunk = 0
     params.data.forEach((item, index) => {
 
       // If chunk doesn't exist yet, create it.
-      if (!this.chunks[index % params.chunkSize]) {
-        this.chunks[index % params.chunkSize] = []
+      if (this.chunks[currentChunk].length === params.chunkSize) {
+        this.chunks[++currentChunk] = []
       }
 
-      this.chunks[index % params.chunkSize].push(item)
+      this.chunks[currentChunk].push(item)
     })
   }
 
