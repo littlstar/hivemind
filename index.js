@@ -3,6 +3,12 @@
 const Lambda = require('aws-sdk/clients/lambda')
 const EventEmitter = require('events')
 
+/**
+ * Create distributed jobs using AWS Lambda functions
+ *
+ * @type {Class}
+ */
+
 module.exports = class Hivemind extends EventEmitter {
   constructor(params) {
     super()
@@ -12,11 +18,13 @@ module.exports = class Hivemind extends EventEmitter {
       AccessKeyId: params.accessKeyId,
       SecretAccessKey: params.secretAccessKey,
       region: 'us-east-1'
+      region: params.awsRegion
     })
 
     // Chunk the data into individual arrays for processing
     this.chunks = []
     params.data.forEach((item, index) => {
+
       // If chunk doesn't exist yet, create it.
       if (!this.chunks[index % params.chunkSize]) {
         this.chunks[index % params.chunkSize] = []
@@ -47,8 +55,7 @@ module.exports = class Hivemind extends EventEmitter {
    */
 
   run() {
-    this.chunks.forEach(chunk => {
-      // Launch function
+    this.chunks.forEach((chunk) => {
       this.lambda.invoke({
         FunctionName: this.funcName,
         Payload: JSON.stringify({
@@ -59,7 +66,7 @@ module.exports = class Hivemind extends EventEmitter {
           return this.emit('error', err)
         }
 
-        this.emit('finish', data.Payload)
+        return this.emit('finish', data.Payload)
       })
     })
   }

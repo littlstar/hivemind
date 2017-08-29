@@ -12,14 +12,9 @@ For creating distributed jobs using AWS Lambda functions.
 const Hivemind = require('lambda-hivemind')
 
 const hivemind = new Hivemind({
-  funcName: 'buzzbuzz',
-    data: [
-      'bee 1',
-        'bee 2',
-        'bee 3',
-        ...
-    ],
-    chunkSize: 10  // Size of chunks to split data into
+  accessKeyId: '', // AWS credentials. Optional.
+  secretAccessKey: '' // AWS credentials. Optional.
+  awsRegion: 'us-east-1',
 })
 
 // Oh no, we haven't published a function of this name yet!
@@ -45,5 +40,7 @@ hivemind.on('error', (err) => {
   console.log("Aww, man!")
 })
 ```
+
+AWS credentials in constructor are only optional if you have the AWS CLI configured or have your credentials as environment variables!
 
 Full example can be found under test/
