@@ -5,7 +5,12 @@ const path = require('path')
 const fs = require('fs')
 
 const hivemind = new Hivemind({
-  funcName: 'glueFactory',
+  func: {
+    name: 'glueFactory',
+    role: '<arn of role>',
+    handler: 'glueFactory.belt'
+  },
+  awsRegion: 'us-east-1',
   data: [
     'Fluttershy',
     'Rarity',
@@ -16,13 +21,9 @@ const hivemind = new Hivemind({
 })
 
 hivemind.publish({
-  Code: {
-    ZipFile: fs.readFileSync(path.resolve('glue-factory.zip'))
-  },
-  FunctionName: 'glueFactory',
-  Handler: 'glueFactory.belt',
-  Role: '[REPLACE WITH ROLE]',
-  Runtime: 'nodejs6.10',
+  files: [
+    'glueFactory.js'
+  ]
 })
 
 hivemind.on('create', () => {

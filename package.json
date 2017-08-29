@@ -25,7 +25,9 @@
   },
   "homepage": "https://github.com/littlstar/unity-hive#readme",
   "dependencies": {
-    "aws-sdk": "^2.104.0"
+    "aws-sdk": "^2.104.0",
+    "through2": "^2.0.3",
+    "yazl": "^2.4.2"
   },
   "devDependencies": {
     "ava": "^0.22.0"
