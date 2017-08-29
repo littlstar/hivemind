@@ -31,6 +31,7 @@ module.exports = class Hivemind extends EventEmitter {
 
       // If chunk doesn't exist yet, create it.
       if (this.chunks[currentChunk].length === params.chunkSize) {
+        // Overly clever way of saying: increment `currentChunk` then use the incremented value
         this.chunks[++currentChunk] = []
       }
 
@@ -39,14 +40,26 @@ module.exports = class Hivemind extends EventEmitter {
   }
 
   /**
-   * Publishes the ZIP file as a Lambda function
+   * Publishes the ZIP file as a Lambda function. Can be passed `files` or
+   * `zipFile` to specify how the code is packaged.
    *
-   * @param  {String} zipFile Fully-qualified path to ZIP file containing script
+   * `zipFile` means that the code has been pre-packaged into a ZIP file and the string is the
+   * relative location of the file.
+   *
+   * `files` is an array of files to be built
+   * into a ZIP file dynamically.
+   *
+   * Note: dynamic ZIP file creation cannot include
+   * folders currently.
+   *
+   * @param {Object} params Parameters for publishing function
+   * @param {Object} [awsParams] Parameters specified in AWS documentation that overrides or supplements parameters
    */
 
   publish(params, awsParams) {
 
     const publishFunc = (code) => {
+
       // Merge parameters and AWS parameters
       // This is so add'l that only AWS cares about can be passed
       const mergedParams = Object.assign({
@@ -73,6 +86,7 @@ module.exports = class Hivemind extends EventEmitter {
         }
 
         if (err) {
+          // If the function doesn't exist, create it.
           if (err.statusCode === 404) {
             this.lambda.createFunction(mergedParams, deployCallback)
           } else {
@@ -80,6 +94,7 @@ module.exports = class Hivemind extends EventEmitter {
           }
         }
 
+        // If the function exists, we should update the code
         this.lambda.updateFunctionCode({
           FunctionName: res.Configuration.FunctionArn,
           ZipFile: mergedParams.Code.ZipFile
@@ -87,8 +102,11 @@ module.exports = class Hivemind extends EventEmitter {
       })
     }
 
+    // Is ZIP file
     if (params.zipFile) {
       publishFunc(fs.readFileSync(path.resolve(params.zipFile)))
+
+      // ZIP file should be created dynamically
     } else if (params.files) {
       // Build ZIP file stream from passed functions
       const file = new zip.ZipFile()
@@ -114,18 +132,25 @@ module.exports = class Hivemind extends EventEmitter {
         .on('finish', () => {
           publishFunc(buff)
         })
+
+      // Find the files on S3
     } else if (awsParams.Code.S3Key) {
       publishFunc()
     } else {
+
+      // Otherwise, the user has done something wrong.
       throw new Error('You have to specify a code location to publish a function')
     }
   }
 
   /**
-   * Launches functions and passes chunked data that was passed into the construtor
+   * Launches jobs using the chunked data as parameters for each job
    */
 
   run() {
+
+    // Promises allow us to track the completion of each job.
+    // These are only internal and are used for triggering the on('end') event
     const promises = this.chunks.map((chunk) => {
       return new Promise((resolve, reject) => {
         this.lambda.invoke({
@@ -135,7 +160,8 @@ module.exports = class Hivemind extends EventEmitter {
           })
         }, (err, data) => {
           if (err) {
-            return reject(err) && this.emit('error', err)
+            reject(err)
+            return this.emit('error', err)
           }
 
           resolve()
@@ -144,6 +170,7 @@ module.exports = class Hivemind extends EventEmitter {
       })
     })
 
+    // After all the jobs finish, emit 'end'
     Promise.all(promises)
       .then(() => {
         this.emit('end')
