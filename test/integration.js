@@ -1,8 +1,6 @@
 'use strict'
 
 const Hivemind = require('../')
-const path = require('path')
-const fs = require('fs')
 
 // Initialize our job manager
 const hivemind = new Hivemind({
@@ -30,6 +28,7 @@ hivemind.publish({
 
 // After creation
 hivemind.on('create', () => {
+
   // Run the jobs
   hivemind.run()
 })
@@ -41,7 +40,7 @@ hivemind.on('finish', (res) => {
 
 // After all jobs have finished
 hivemind.on('end', () => {
-  console.log("Dear Celestia:...")
+  console.log('Dear Celestia:...')
 })
 
 // If an error occurs in a job

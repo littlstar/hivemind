@@ -27,10 +27,11 @@ module.exports = class Hivemind extends EventEmitter {
     // Chunk the data into individual arrays for processing
     this.chunks = [[]]
     let currentChunk = 0
-    params.data.forEach((item, index) => {
+    params.data.forEach((item) => {
 
       // If chunk doesn't exist yet, create it.
       if (this.chunks[currentChunk].length === params.chunkSize) {
+
         // Overly clever way of saying: increment `currentChunk` then use the incremented value
         this.chunks[++currentChunk] = []
       }
@@ -53,7 +54,8 @@ module.exports = class Hivemind extends EventEmitter {
    * folders currently.
    *
    * @param {Object} params Parameters for publishing function
-   * @param {Object} [awsParams] Parameters specified in AWS documentation that overrides or supplements parameters
+   * @param {Object} [awsParams] Parameters specified in AWS documentation that overrides
+   *                               or supplements parameters
    */
 
   publish(params, awsParams) {
@@ -61,7 +63,7 @@ module.exports = class Hivemind extends EventEmitter {
     const publishFunc = (code) => {
 
       // Merge parameters and AWS parameters
-      // This is so add'l that only AWS cares about can be passed
+      // This is so add'l parameters that only AWS cares about can be passed
       const mergedParams = Object.assign({
         Code: {
           ZipFile: code
@@ -86,6 +88,7 @@ module.exports = class Hivemind extends EventEmitter {
         }
 
         if (err) {
+
           // If the function doesn't exist, create it.
           if (err.statusCode === 404) {
             this.lambda.createFunction(mergedParams, deployCallback)
@@ -108,16 +111,14 @@ module.exports = class Hivemind extends EventEmitter {
 
       // ZIP file should be created dynamically
     } else if (params.files) {
-      // Build ZIP file stream from passed functions
-      const file = new zip.ZipFile()
 
-      // Add files to zip file
+      const file = new zip.ZipFile()
       params.files.forEach(filePath => file.addFile(filePath, filePath))
 
       // Signal that there are no more files
       file.end()
 
-      // Array to contain buffers
+      // Initialize an empty buffer
       let buff = Buffer.alloc(0)
 
       // We have to pipe the stream through 'through' so we can extract
@@ -125,7 +126,7 @@ module.exports = class Hivemind extends EventEmitter {
       file.outputStream
         .pipe(through2((chunk, _, callback) => {
 
-          // Push buffers to buffer
+          // Add each chunk to a single buffer
           buff = Buffer.concat([buff, chunk])
           return callback()
         }))
@@ -151,8 +152,8 @@ module.exports = class Hivemind extends EventEmitter {
 
     // Promises allow us to track the completion of each job.
     // These are only internal and are used for triggering the on('end') event
-    const promises = this.chunks.map((chunk) => {
-      return new Promise((resolve, reject) => {
+    const promises = this.chunks.map(chunk =>
+      new Promise((resolve, reject) => {
         this.lambda.invoke({
           FunctionName: this.func.name,
           Payload: JSON.stringify({
@@ -167,8 +168,7 @@ module.exports = class Hivemind extends EventEmitter {
           resolve()
           return this.emit('finish', data.Payload)
         })
-      })
-    })
+      }))
 
     // After all the jobs finish, emit 'end'
     Promise.all(promises)
