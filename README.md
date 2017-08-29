@@ -50,6 +50,11 @@ hivemind.on('finish', (results) => {
   console.log("Woah!")
 })
 
+hivemind.on('end', () => {
+  // All jobs have finished!
+  process.exit(0)
+})
+
 hivemind.on('error', (err) => {
   console.log("Aww, man!")
 })

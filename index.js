@@ -115,19 +115,27 @@ module.exports = class Hivemind extends EventEmitter {
    */
 
   run() {
-    this.chunks.forEach((chunk) => {
-      this.lambda.invoke({
-        FunctionName: this.funcName,
-        Payload: JSON.stringify({
-          chunk
-        })
-      }, (err, data) => {
-        if (err) {
-          return this.emit('error', err)
-        }
+    const promises = this.chunks.map((chunk) => {
+      return new Promise((resolve, reject) => {
+        this.lambda.invoke({
+          FunctionName: this.func.name,
+          Payload: JSON.stringify({
+            chunk
+          })
+        }, (err, data) => {
+          if (err) {
+            return reject(err) && this.emit('error', err)
+          }
 
-        return this.emit('finish', data.Payload)
+          resolve()
+          return this.emit('finish', data.Payload)
+        })
       })
     })
+
+    Promise.all(promises)
+      .then(() => {
+        this.emit('end')
+      })
   }
 }
