@@ -91,17 +91,17 @@ module.exports = class Hivemind extends EventEmitter {
 
           // If the function doesn't exist, create it.
           if (err.statusCode === 404) {
-            this.lambda.createFunction(mergedParams, deployCallback)
+            return this.lambda.createFunction(mergedParams, deployCallback)
           } else {
-            this.emit('error', err)
+            return this.emit('error', err)
           }
+        } else {
+          // If the function exists, we should update the code
+          this.lambda.updateFunctionCode({
+            FunctionName: res.Configuration.FunctionArn,
+            ZipFile: mergedParams.Code.ZipFile
+          }, deployCallback)
         }
-
-        // If the function exists, we should update the code
-        this.lambda.updateFunctionCode({
-          FunctionName: res.Configuration.FunctionArn,
-          ZipFile: mergedParams.Code.ZipFile
-        }, deployCallback)
       })
     }
 
