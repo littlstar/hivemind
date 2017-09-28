@@ -1,6 +1,6 @@
 {
   "name": "lambda-hivemind",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "Launch AWS Lambda functions for distributed computing",
   "main": "index.js",
   "scripts": {
