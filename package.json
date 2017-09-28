@@ -8,7 +8,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/littlstar/unity-hive.git"
+    "url": "git+https://github.com/littlstar/hivemind.git"
   },
   "keywords": [
     "distributed",
@@ -21,9 +21,9 @@
   "author": "Madeline Cameron",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/littlstar/unity-hive/issues"
+    "url": "https://github.com/littlstar/hivemind/issues"
   },
-  "homepage": "https://github.com/littlstar/unity-hive#readme",
+  "homepage": "https://github.com/littlstar/hivemind#readme",
   "dependencies": {
     "aws-sdk": "^2.104.0",
     "through2": "^2.0.3",
