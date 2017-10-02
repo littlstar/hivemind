@@ -62,4 +62,4 @@ hivemind.on('error', (err) => {
 
 AWS credentials in constructor are only optional if you have the AWS CLI configured or have your credentials as environment variables!
 
-Full example can be found under `test/`
+Full example can be found under [`test/` folder](test).
