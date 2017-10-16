@@ -105,15 +105,9 @@ module.exports = class Hivemind extends EventEmitter {
       })
     }
 
-    // Is ZIP file
-    if (params.zipFile) {
-      publishFunc(fs.readFileSync(path.resolve(params.zipFile)))
-
-      // ZIP file should be created dynamically
-    } else if (params.files) {
-
+    const createAndPublishZipFile = (files) => {
       const file = new zip.ZipFile()
-      params.files.forEach(filePath => file.addFile(filePath, filePath))
+      files.forEach(filePath => file.addFile(filePath, filePath))
 
       // Signal that there are no more files
       file.end()
@@ -133,12 +127,23 @@ module.exports = class Hivemind extends EventEmitter {
         .on('finish', () => {
           publishFunc(buff)
         })
+    }
+
+    // Is ZIP file
+    if (params.zipFile) {
+      publishFunc(fs.readFileSync(path.resolve(params.zipFile)))
+
+      // ZIP file should be created dynamically
+    } else if (params.files) {
+      createAndPublishZipFile(params.files)
 
       // Find the files on S3
     } else if (awsParams.Code.S3Key) {
       publishFunc()
+    } else if (params.lambdaFunc) {
+      fs.writeFileSync(`_${this.func.name}.js`, params.lambdaFunc)
+      createAndPublishZipFile([ path.resolve(`_${this.func.name}.js`) ])
     } else {
-
       // Otherwise, the user has done something wrong.
       throw new Error('You have to specify a code location to publish a function')
     }
