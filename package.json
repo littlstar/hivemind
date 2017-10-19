@@ -26,10 +26,12 @@
   "homepage": "https://github.com/littlstar/hivemind#readme",
   "dependencies": {
     "aws-sdk": "^2.104.0",
+    "persist-store": "^2.0.1",
     "through2": "^2.0.3",
     "yazl": "^2.4.2"
   },
   "devDependencies": {
-    "ava": "^0.22.0"
+    "ava": "^0.22.0",
+    "aws-sdk-mock": "^1.7.0"
   }
 }

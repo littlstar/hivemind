@@ -1,12 +1,15 @@
 'use strict'
 
-const Lambda = require('aws-sdk/clients/lambda')
+const AWS = require('aws-sdk')
+const mockLambda = require('aws-sdk-mock')
+const Persist = require('persist-store')
 const EventEmitter = require('events')
 const through2 = require('through2')
 const path = require('path')
 const zip = require('yazl')
 const fs = require('fs')
 
+mockLambda.setSDKInstance(AWS)
 /**
  * Create distributed jobs using AWS Lambda functions
  *
@@ -18,11 +21,43 @@ module.exports = class Hivemind extends EventEmitter {
     super()
 
     this.func = params.func
-    this.lambda = new Lambda({
-      AccessKeyId: params.accessKeyId,
-      SecretAccessKey: params.secretAccessKey,
-      region: params.awsRegion
-    })
+
+    if (process.env.ENV === 'dev') {
+      mockLambda.mock('Lambda', 'createFunction', function(params, callback) {
+        return callback()
+      })
+
+      mockLambda.mock('Lambda', 'getFunction', function(params, callback) {
+        return callback({ statusCode: 404 })
+      })
+
+      mockLambda.mock('Lambda', 'invoke', function(params, callback) {
+        setTimeout(() => {
+          return callback(null, { Payload: { finish: true }})
+        }, Math.random() * 1000)
+      })
+
+      this.lambda = new AWS.Lambda()
+    } else {
+      this.lambda = new AWS.Lambda({
+        AccessKeyId: params.accessKeyId,
+        SecretAccessKey: params.secretAccessKey,
+        region: params.awsRegion
+      })
+    }
+
+    this.persister = new Persist([
+        {
+          type: 'local',
+          path: './jobs',
+        },
+        {
+          type: 's3',
+          bucket: 'ls-hivemind-jobs',
+          accessKeyId: params.accessKeyId,
+          secretAccessKey: params.secretAccessKey
+        }
+    ])
 
     // Chunk the data into individual arrays for processing
     this.chunks = [[]]
@@ -58,7 +93,7 @@ module.exports = class Hivemind extends EventEmitter {
    *                               or supplements parameters
    */
 
-  publish(params, awsParams) {
+  publish(params, awsParams = {}) {
 
     const publishFunc = (code) => {
 
@@ -80,7 +115,7 @@ module.exports = class Hivemind extends EventEmitter {
         FunctionName: mergedParams.FunctionName
       }, (err, res) => {
         const deployCallback = (error) => {
-          if (err) {
+          if (error) {
             return this.emit('error', error)
           }
 
@@ -88,7 +123,6 @@ module.exports = class Hivemind extends EventEmitter {
         }
 
         if (err) {
-
           // If the function doesn't exist, create it.
           if (err.statusCode === 404) {
             return this.lambda.createFunction(mergedParams, deployCallback)
@@ -107,7 +141,7 @@ module.exports = class Hivemind extends EventEmitter {
 
     const createAndPublishZipFile = (files) => {
       const file = new zip.ZipFile()
-      files.forEach(filePath => file.addFile(filePath, filePath))
+      files.forEach(filePath => { file.addFile(path.resolve(filePath), filePath) })
 
       // Signal that there are no more files
       file.end()
@@ -138,11 +172,11 @@ module.exports = class Hivemind extends EventEmitter {
       createAndPublishZipFile(params.files)
 
       // Find the files on S3
-    } else if (awsParams.Code.S3Key) {
+    } else if (awsParams.Code && awsParams.Code.S3Key) {
       publishFunc()
     } else if (params.lambdaFunc) {
-      fs.writeFileSync(`_${this.func.name}.js`, params.lambdaFunc)
-      createAndPublishZipFile([ path.resolve(`_${this.func.name}.js`) ])
+      fs.writeFileSync(`_${this.func.name}.js`, params.lambdaFunc.toString())
+      createAndPublishZipFile([ `_${this.func.name}.js` ])
     } else {
       // Otherwise, the user has done something wrong.
       throw new Error('You have to specify a code location to publish a function')
@@ -153,32 +187,35 @@ module.exports = class Hivemind extends EventEmitter {
    * Launches jobs using the chunked data as parameters for each job
    */
 
-  run() {
+  async run() {
 
     // Promises allow us to track the completion of each job.
     // These are only internal and are used for triggering the on('end') event
-    const promises = this.chunks.map(chunk =>
-      new Promise((resolve, reject) => {
-        this.lambda.invoke({
+    const promises = this.chunks.map(async chunk => {
+      try {
+        const data = await this.lambda.invoke({
           FunctionName: this.func.name,
           Payload: JSON.stringify({
             chunk
           })
-        }, (err, data) => {
-          if (err) {
-            reject(err)
-            return this.emit('error', err)
-          }
+        }).promise()
 
-          resolve()
-          return this.emit('finish', data.Payload)
-        })
-      }))
+        // Emit 'finish' and return the payload
+        this.emit('finish', data.Payload)
+
+        return data.Payload
+      } catch (err) {
+        this.emit('error', err)
+
+        throw err
+      }
+    })
 
     // After all the jobs finish, emit 'end'
-    Promise.all(promises)
-      .then(() => {
-        this.emit('end')
-      })
+    const results = await Promise.all(promises)
+
+    this.emit('end')
+
+    return results
   }
 }
