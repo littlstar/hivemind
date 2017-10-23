@@ -1,15 +1,13 @@
 'use strict'
 
-const AWS = require('aws-sdk')
-const mockLambda = require('aws-sdk-mock')
-const Persist = require('persist-store')
-const EventEmitter = require('events')
-const through2 = require('through2')
-const path = require('path')
-const zip = require('yazl')
 const fs = require('fs')
+const zip = require('yazl')
+const path = require('path')
+const AWS = require('aws-sdk')
+const through2 = require('through2')
+const EventEmitter = require('events')
+const Persist = require('persist-store')
 
-mockLambda.setSDKInstance(AWS)
 /**
  * Create distributed jobs using AWS Lambda functions
  *
@@ -22,29 +20,11 @@ module.exports = class Hivemind extends EventEmitter {
 
     this.func = params.func
 
-    if (process.env.ENV === 'dev') {
-      mockLambda.mock('Lambda', 'createFunction', function(params, callback) {
-        return callback()
-      })
-
-      mockLambda.mock('Lambda', 'getFunction', function(params, callback) {
-        return callback({ statusCode: 404 })
-      })
-
-      mockLambda.mock('Lambda', 'invoke', function(params, callback) {
-        setTimeout(() => {
-          return callback(null, { Payload: { finish: true }})
-        }, Math.random() * 1000)
-      })
-
-      this.lambda = new AWS.Lambda()
-    } else {
-      this.lambda = new AWS.Lambda({
-        AccessKeyId: params.accessKeyId,
-        SecretAccessKey: params.secretAccessKey,
-        region: params.awsRegion
-      })
-    }
+    this.lambda = params.awsLambda || new AWS.Lambda({
+      AccessKeyId: params.accessKeyId,
+      SecretAccessKey: params.secretAccessKey,
+      region: params.awsRegion
+    })
 
     this.persister = new Persist([
         {
